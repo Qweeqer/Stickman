@@ -4,17 +4,49 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stickman Run</title>
-    <!-- <link rel="stylesheet" href="./css/index.css" /> -->
-    <style>
-      body {
-        margin: 0;
-      }
-      canvas {
-        display: block;
-      }
-    </style>
+    <link
+      href="https://fonts.googleapis.com/css?family=Playfair+Display:400,700"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/index.css" />
   </head>
   <body>
+    <div class="panel">
+      <div class="game-title">
+        <div class="title">Stickman run</div>
+        <div class="byline">
+          by <a target="_blank" href="https://github.com/Qweeqer">Qweeqer</a>
+        </div>
+      </div>
+      <div class="stat">
+        <label>Score</label>
+        <p id="score">0</p>
+      </div>
+      <table id="controls">
+        <tr>
+          <td>Up:</td>
+          <td>Jump</td>
+        </tr>
+        <tr>
+          <td>Left:</td>
+          <td>Left lane switch</td>
+        </tr>
+        <tr>
+          <td>Right:</td>
+          <td>Right lane switch</td>
+        </tr>
+        <tr>
+          <td>p:</td>
+          <td>Pause</td>
+        </tr>
+      </table>
+      <table id="ranks"></table>
+      <div class="animate-flicker" id="variable-content">
+        <img src="./images/Tutorial_SWIPE TO START.png" alt="Swipe to start">
+      </div>
+    </div>
+    <div id="world"></div>
     <script type="module" src="./index.js"></script>
+    <script type="module" src="./game.js"></script>
   </body>
 </html>
