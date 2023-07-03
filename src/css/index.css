@@ -7,15 +7,18 @@
 html, body {
   width:100%;
   height:100%;
+  background: linear-gradient(#badbe4, #aaf7e1);
 }
 
-html, body {
-    background: linear-gradient(#badbe4, #aaf7e1);
+canvas {
+    position: absolute;
+    z-index: 0;
 }
+
 
 #world {
   position: absolute;
-  width:75%;
+  width:100%;
   height: 100%;
   right:0;
   overflow: hidden;
@@ -28,18 +31,22 @@ html, body {
     padding: 2em 3em;
     width: 25%;
     box-sizing: border-box;
+    background-color: #aaf7e1;
+    color: #fff;
 }
 
 .game-title {
     z-index:100;
     position:relative;
     text-align:center;
+    color: #fff;
 }
 
 .game-title .title {
     font-family: 'Playfair Display', serif;
     font-weight:700;
     font-size:3em;
+    color: #fff;
 }
 
 .game-title .byline {
@@ -50,6 +57,7 @@ html, body {
     font-size:0.8em;
     font-weight:600;
     margin-top:0.5em;
+    color: #fff;
 }
 
 a {
@@ -140,9 +148,43 @@ td:nth-child(2) {
 }
 
 .animate-flicker {
+    position: relative;
+    top:70%;
+    margin: 0 auto;
    -webkit-animation: flickerAnimation 1.5s infinite;
    -moz-animation: flickerAnimation 1.5s infinite;
    -o-animation: flickerAnimation 1.5s infinite;
     animation: flickerAnimation 1.5s infinite;
+    z-index: 1;
 }
+
+.hand-animation {
+  position: relative;
+  left: 15%;
+  width: 100%;
+  height: 90%; 
+  z-index: 1; 
+}
+
+.hand-animation img {
+  position: absolute;
+  top: 100%;
+  left: 100%;
+  width: 10%;
+  transform: translate(200%, -100%);
+  animation: handAnimation 3s linear infinite;
+}
+
+@keyframes handAnimation {
+  0% {
+    left: 0;
+  }
+  50% {
+    left: 20%;
+  }
+  100% {
+    left: 0;
+  }
+}
+
 
