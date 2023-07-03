@@ -5,19 +5,19 @@ import { loadModels, updateAnimation } from './mesh/models.js';
 const scene = new THREE.Scene();
 let stickman; // Переменная stickman
 
-scene.fog = new THREE.Fog(0x363d3d, 1, 3000);
+scene.fog = new THREE.Fog(0x363d3d, -1, 3000);
 scene.fog.near = 0; // Замените 0 на желаемое значение ближней дальности
 scene.fog.far = 1000; // Замените 1000 на желаемое значение дальней дальности
 
 // Initialize the lights.
-const ambientLight = new THREE.AmbientLight(0xff8844, 0.7);
-const spotLight = new THREE.SpotLight(0xffffff, 0.8);
+const ambientLight = new THREE.AmbientLight(0xff8844, 0.5);
+const spotLight = new THREE.SpotLight(0xffffff, 0.7);
 spotLight.position.set(200, 200, 0);
 spotLight.castShadow = false;
 scene.add(ambientLight);
 scene.add(spotLight);
 
-const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.5); // Попробуйте увеличить интенсивность
+const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.1); // Попробуйте увеличить интенсивность
 scene.add(hemisphereLight);
 
 // Инициализация камеры
@@ -52,7 +52,7 @@ window.addEventListener('resize', function () {
 // Загрузка моделей и инициализация игры после загрузки
 loadModels(scene).then(() => {
   stickman = loadModels.stickman; // Присваивание переменной stickman экспортированного значения из loadModels
-  camera.position.set(1, 4, 5);
+  camera.position.set(1, 4, 5.5);
 
   // Обратить внимание, что позиция камеры устанавливается после загрузки моделей
   if (stickman) {
