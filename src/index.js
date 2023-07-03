@@ -5,15 +5,15 @@ import { loadModels, updateAnimation } from './mesh/models.js';
 const scene = new THREE.Scene();
 let stickman; // Переменная stickman
 
-scene.fog = new THREE.Fog(0x363d3d, -1, 3000);
+scene.fog = new THREE.Fog(0x363d3d, 1, 3000);
 scene.fog.near = 0; // Замените 0 на желаемое значение ближней дальности
 scene.fog.far = 1000; // Замените 1000 на желаемое значение дальней дальности
 
 // Initialize the lights.
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+const ambientLight = new THREE.AmbientLight(0xff8844, 0.7);
 const spotLight = new THREE.SpotLight(0xffffff, 0.8);
-spotLight.position.set(-100, 100, 0);
-spotLight.castShadow = true;
+spotLight.position.set(200, 200, 0);
+spotLight.castShadow = false;
 scene.add(ambientLight);
 scene.add(spotLight);
 
@@ -21,15 +21,22 @@ const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.5); // �
 scene.add(hemisphereLight);
 
 // Инициализация камеры
-const camera = new THREE.PerspectiveCamera(
-  80,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  2000
-);
+// const camera = new THREE.PerspectiveCamera(
+//   80,
+//   window.innerWidth / window.innerHeight,
+//   0.1,
+//   2000
+// );
 
 // Инициализация рендерера
 const renderer = new THREE.WebGLRenderer();
+const fov = 75;
+const aspect = window.innerWidth / window.innerHeight;
+const near = 5;
+const far = 2000;
+const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+camera.position.set(0, 0, 0);
+
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
