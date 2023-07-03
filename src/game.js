@@ -1,243 +1,353 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import {
-  loadModels,
-  updateAnimation,
-  stickmanUrl,
-  trackFloorUrl,
-  brainUrl,
-} from './mesh/models.js';
-var Colors = {
-  cherry: 0xe35d6a,
-  blue: 0x1560bd,
-  white: 0xd8d0d1,
-  black: 0x000000,
-  brown: 0x59332e,
-  peach: 0xffdab9,
-  yellow: 0xffff00,
-  olive: 0x556b2f,
-  grey: 0x696969,
-  sand: 0xc2b280,
-  brownDark: 0x23190f,
-  green: 0x669900,
-};
 
-var deg2Rad = Math.PI / 180;
+import { stickmanUrl, trackFloorUrl, brainUrl } from './mesh/models.js';
 
-// window.addEventListener('load', function () {
-//   setTimeout(function () {
-//     new World();
-//   }, 0);
-// });
+class Character {
+  constructor() {
+    this.keysAllowed = {};
 
+    this.element = new THREE.Group();
+    this.mixer = null;
+    this.character = null;
+    this.characterURL = stickmanUrl;
+    this.isRunning = false;
+    this.runAction = null;
+    this.moveLeftDirection = false;
+    this.moveRightDirection = false;
 
-function World() {
-  var self = this;
-  var element,
-    scene,
-    camera,
-    character,
-    renderer,
-    light,
-    trackFloor,
-    brain,
-    mixer,
-    paused,
-    keysAllowed,
-    score,
-    difficulty,
-    fogDistance,
-    gameOver;
+    // Привязываем обработчики событий к экземпляру класса
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleKeyUp = this.handleKeyUp.bind(this);
+  }
 
-  init();
-
-  function init() {
-    element = document.getElementById('world');
-
-    var variableContent = document.createElement('div');
-    variableContent.className = 'animate-flicker';
-    variableContent.id = 'variable-content';
-    element.appendChild(variableContent);
-
-    
-
-    renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
+  loadCharacter() {
+    return new Promise((resolve, reject) => {
+      const loader = new GLTFLoader();
+      loader.load(
+        this.characterURL,
+        gltf => {
+          this.character = gltf.scene;
+          this.mixer = new THREE.AnimationMixer(this.character);
+          if (
+            this.character.animations &&
+            this.character.animations.length > 0
+          ) {
+            this.playAnimation(this.character.animations, 'Run');
+            this.runAction = this.mixer.clipAction(
+              this.character.animations[4]
+            ); 
+          }
+          resolve();
+        },
+        undefined,
+        reject
+      );
     });
-    renderer.setSize(element.clientWidth, element.clientHeight);
-    renderer.shadowMap.enabled = true;
-    element.appendChild(renderer.domElement);
+  }
 
-    scene = new THREE.Scene();
-    fogDistance = 40000;
-    scene.fog = new THREE.Fog(0xbadbe4, 1, fogDistance);
+  playAnimation(animations, name) {
+    if (animations && animations.length > 0) {
+      const clip = THREE.AnimationClip.findByName(animations, name);
+      if (clip) {
+        const action = this.mixer.clipAction(clip);
+        action.play();
+      }
+    }
+  }
 
-    camera = new THREE.PerspectiveCamera(
+  update() {
+    if (this.mixer) {
+      this.mixer.update(0.01);
+    }
+
+    if (this.isRunning) {
+      this.moveForward();
+    }
+
+    if (this.moveLeftDirection) {
+      this.moveLeft();
+    }
+
+    if (this.moveRightDirection) {
+      this.moveRight();
+    }
+  }
+
+  onUpKeyPressed() {
+    this.isRunning = true;
+    if (this.runAction) {
+      this.mixer.stopAllAction();
+      this.runAction.reset();
+      this.runAction.play();
+    }
+  }
+
+  onLeftKeyPressed() {
+    this.moveLeftDirection = true;
+    this.moveRightDirection = false;
+  }
+
+  onRightKeyPressed() {
+    this.moveLeftDirection = false;
+    this.moveRightDirection = true;
+  }
+
+  moveForward() {
+    this.element.position.z -= 3;
+    this.onUpKeyPressed();
+  }
+
+  moveLeft() {
+    if (this.element.position.x > -3) {
+      this.element.position.x -= 1;
+    }
+  }
+
+  moveRight() {
+    if (this.element.position.x < 3) {
+      this.element.position.x += 1;
+    }
+  }
+
+  onUnpause() {}
+
+  onPause() {}
+
+  handleKeyDown(e) {
+    if (!this.gameOver) {
+      const key = e.keyCode;
+      if (this.keysAllowed[key] === false) return;
+      this.keysAllowed[key] = false;
+      if (this.paused && !this.collisionsDetected() && key > 18) {
+        this.paused = false;
+        this.character.onUnpause();
+        document.getElementById('variable-content').style.visibility = 'hidden';
+        document.getElementById('controls').style.display = 'none';
+      } else {
+        if (key === 80) {
+          this.paused = true;
+          this.onPause();
+          document.getElementById('variable-content').style.visibility =
+            'visible';
+          document.getElementById('variable-content').innerHTML =
+            'Game is paused. Press any key to resume.';
+        }
+        if (key === 38 && !this.paused) {
+          this.onUpKeyPressed();
+          console.log('Up key pressed');
+        }
+        if (key === 37 && !this.paused) {
+          this.moveLeftDirection = true;
+          this.moveRightDirection = false;
+          console.log('Left key pressed');
+        }
+        if (key === 39 && !this.paused) {
+          this.moveLeftDirection = false;
+          this.moveRightDirection = true;
+          console.log('Right key pressed');
+        }
+      }
+    }
+  }
+
+  handleKeyUp(e) {
+    const key = e.keyCode;
+    if (key === 37 && !this.paused) {
+      this.moveLeftDirection = false;
+      this.moveRightDirection = false;
+      console.log('Left key released');
+    }
+    if (key === 39 && !this.paused) {
+      this.moveRightDirection = false;
+      this.moveLeftDirection = false;
+      console.log('Right key released');
+    }
+    this.keysAllowed[key] = true;
+  }
+}
+
+class World {
+  constructor() {
+    this.element = document.getElementById('world');
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(
       60,
-      element.clientWidth / element.clientHeight,
+      this.element.clientWidth / this.element.clientHeight,
       1,
       120000
     );
-    camera.position.set(0, 1500, -2000);
-    camera.lookAt(new THREE.Vector3(0, 600, -5000));
-    window.camera = camera;
-
-    window.addEventListener('resize', handleWindowResize, false);
-
-    light = new THREE.HemisphereLight(0xffffff, 0xffffff, 1);
-    scene.add(light);
-
-    character = new Character();
-    scene.add(character.element);
-
-   trackFloor = createModel(trackFloorUrl, scene);
-    trackFloor.position.set(0, 0, 0);
-    scene.add(trackFloor);
-
-    brain = createModel(brainUrl);
-    brain.position.set(0, 0, 0);
-    scene.add(brain);
-
-    gameOver = false;
-    paused = true;
-
-    var left = 37;
-    var up = 38;
-    var right = 39;
-    var p = 80;
-
-    keysAllowed = {};
-    document.addEventListener('keydown', function (e) {
-      if (!gameOver) {
-        var key = e.keyCode;
-        if (keysAllowed[key] === false) return;
-        keysAllowed[key] = false;
-        if (paused && !collisionsDetected() && key > 18) {
-          paused = false;
-          character.onUnpause();
-          document.getElementById('variable-content').style.visibility =
-            'hidden';
-          document.getElementById('controls').style.display = 'none';
-        } else {
-          if (key == p) {
-            paused = true;
-            character.onPause();
-            document.getElementById('variable-content').style.visibility =
-              'visible';
-            document.getElementById('variable-content').innerHTML =
-              'Game is paused. Press any key to resume.';
-          }
-          if (key == up && !paused) {
-            character.onUpKeyPressed();
-          }
-          if (key == left && !paused) {
-            character.onLeftKeyPressed();
-            console.log('Left key pressed');
-          }
-          if (key == right && !paused) {
-            character.onRightKeyPressed();
-            console.log('Right key pressed');
-          }
-        }
-      }
+    this.renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
     });
+    this.light = new THREE.HemisphereLight(0xffffff, 0xffffff, 1);
+    this.trackFloor = null;
+    this.brain = null;
+    this.paused = true;
+    this.keysAllowed = {};
+    this.gameOver = false;
+    this.score = 0;
+    this.difficulty = 0;
+    this.fogDistance = 40000;
+    this.character = null;
+    this.mixer = null;
 
-    document.addEventListener('keyup', function (e) {
-      keysAllowed[e.keyCode] = true;
-    });
-
-    document.addEventListener('focus', function (e) {
-      keysAllowed = {};
-    });
-
-    score = 0;
-    difficulty = 0;
-    document.getElementById('score').innerHTML = score;
-
-    loop();
+    this.init();
   }
 
-  function loop() {
-    if (!paused) {
-      if (trackFloor.position.z % 3000 == 0) {
-        difficulty += 1;
-        var levelLength = 30;
-        if (difficulty % levelLength == 0) {
-          var level = difficulty / levelLength;
+  async init() {
+    this.renderer.setSize(this.element.clientWidth, this.element.clientHeight);
+    this.renderer.shadowMap.enabled = true;
+    this.element.appendChild(this.renderer.domElement);
+    this.scene.fog = new THREE.Fog(0xbadbe4, 1, this.fogDistance);
+    this.scene.background = new THREE.Color(0xa0a0a0);
+    this.camera.position.set(0, 1500, -2000);
+    this.camera.lookAt(new THREE.Vector3(0, 600, -5000));
+
+    window.addEventListener(
+      'resize',
+      this.handleWindowResize.bind(this),
+      false
+    );
+
+    this.scene.add(this.light);
+
+    this.character = new Character();
+    await this.character.loadCharacter(); // Дождитесь загрузки модели и анимаций
+    if (
+      this.character.character.animations &&
+      this.character.character.animations.length > 0
+    ) {
+      this.character.playAnimation(this.character.character.animations, 'Run'); // Воспроизведите анимацию бега
+      this.character.runAction = this.character.mixer.clipAction(
+        this.character.character.animations[4]
+      ); // Установите анимацию бега для runAction
+    }
+    this.character.character.scale.set(100, 100, 100);
+    this.scene.add(this.character.element);
+
+    this.trackFloor = await this.createModel(trackFloorUrl);
+    this.trackFloor.position.set(0, 0, 0);
+    this.scene.add(this.trackFloor);
+
+    this.brain = await this.createModel(brainUrl);
+    this.brain.position.set(0, 0, 0);
+    this.scene.add(this.brain);
+
+    this.keysAllowed = {};
+
+    this.score = 0;
+    this.difficulty = 0;
+    document.getElementById('score').innerHTML = this.score;
+
+    this.initEventListeners();
+
+    this.loop();
+  }
+
+  loop() {
+    if (!this.paused) {
+      if (this.trackFloor.position.z % 3000 === 0) {
+        this.difficulty += 1;
+        const levelLength = 30;
+        if (this.difficulty % levelLength === 0) {
+          const level = this.difficulty / levelLength;
           switch (level) {
             case 1:
               break;
-            // Add additional cases for different levels
+            // Добавьте дополнительные варианты для других уровней
           }
         }
-        createRowOfModels(-120000);
-        scene.fog.far = fogDistance;
+        this.createRowOfModels(-120000);
+        this.scene.fog.far = this.fogDistance;
       }
 
-      updateModelPositions();
-      character.update();
+      this.updateModelPositions();
+      this.character.update();
 
-      if (collisionsDetected()) {
-        gameOver = true;
-        paused = true;
-        document.addEventListener('keydown', function (e) {
-          if (e.keyCode == 40) document.location.reload(true);
+      if (this.collisionsDetected()) {
+        this.gameOver = true;
+        this.paused = true;
+        document.addEventListener('keydown', e => {
+          if (e.keyCode === 40) document.location.reload(true);
         });
-        var variableContent = document.getElementById('variable-content');
+        const variableContent = document.getElementById('variable-content');
         variableContent.style.visibility = 'visible';
         variableContent.innerHTML =
           'Game over! Press the down arrow to try again.';
       }
     }
 
-    renderer.render(scene, camera);
-    requestAnimationFrame(loop);
+    this.renderer.render(this.scene, this.camera);
+    requestAnimationFrame(this.loop.bind(this));
   }
 
-  function handleWindowResize() {
-    camera.aspect = element.clientWidth / element.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(element.clientWidth, element.clientHeight);
+  handleWindowResize() {
+    this.camera.aspect = this.element.clientWidth / this.element.clientHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(this.element.clientWidth, this.element.clientHeight);
   }
 
-  function createRowOfModels(z) {
-    var pos = -1800;
+  async createModel(url) {
+    const loader = new GLTFLoader();
+    return new Promise((resolve, reject) => {
+      loader.load(
+        url,
+        gltf => {
+          const model = gltf.scene;
+          this.scene.add(model);
+          resolve(model);
+        },
+        undefined,
+        reject
+      );
+    });
+  }
+
+  createRowOfModels(z) {
+    let pos = -1800;
     while (pos < 1800) {
-      var model = createModel(brainUrl);
-      model.position.set(pos, 10, z);
-      scene.add(model);
+      this.createModel(brainUrl).then(model => {
+        model.position.set(pos, 10, z);
+        this.scene.add(model);
+      });
       pos += Math.random() * 800 + 800;
     }
   }
 
-  function updateModelPositions() {
-    scene.traverse(function (object) {
+  updateModelPositions() {
+    this.scene.traverse(object => {
       if (
         object instanceof THREE.Mesh &&
-        object !== trackFloor &&
-        object !== brain
+        object !== this.trackFloor &&
+        object !== this.brain &&
+        object !== this.character.element
       ) {
         object.position.z += 100;
       }
     });
   }
 
-  function collisionsDetected() {
-    var charPos = character.element.position.clone();
-    var charBox = new THREE.Box3().setFromObject(character.element);
+  collisionsDetected() {
+    if (!this.character || !this.character.element) {
+      return false;
+    }
 
-    var collisionDetected = false;
+    const charPos = this.character.element.position.clone();
+    const charBox = new THREE.Box3().setFromObject(this.character.element);
 
-    scene.traverse(function (object) {
+    let collisionDetected = false;
+
+    this.scene.traverse(object => {
       if (
         object instanceof THREE.Mesh &&
-        object !== character.element &&
-        object !== trackFloor &&
-        object !== brain
+        object !== this.character.element &&
+        object !== this.trackFloor &&
+        object !== this.brain
       ) {
-        var objPos = object.position.clone();
-        var objBox = new THREE.Box3().setFromObject(object);
+        const objPos = object.position.clone();
+        const objBox = new THREE.Box3().setFromObject(object);
         if (charBox.intersectsBox(objBox)) {
           collisionDetected = true;
           return;
@@ -248,22 +358,17 @@ function World() {
     return collisionDetected;
   }
 
-function createModel(url) {
-  var loader = new GLTFLoader();
-  var model;
-
-  loader.load(url, function (gltf) {
-    model = gltf.scene;
-    scene.add(model);
-  });
-
-  return model;
-}
-
-
-  function Character() {
-    // Character implementation
+  initEventListeners() {
+    document.addEventListener('keydown', this.character.handleKeyDown);
+    document.addEventListener('keyup', this.character.handleKeyUp);
+    window.addEventListener('focus', this.handleFocus);
   }
+
+  handleFocus = e => {
+    this.keysAllowed = {};
+  };
 }
 
-// new World();
+window.addEventListener('DOMContentLoaded', () => {
+  const world = new World();
+});
