@@ -36,7 +36,7 @@ class Character {
             this.playAnimation(this.character.animations, 'Run');
             this.runAction = this.mixer.clipAction(
               this.character.animations[4]
-            ); 
+            );
           }
           resolve();
         },
@@ -74,23 +74,22 @@ class Character {
     }
   }
 
-  onUpKeyPressed() {
-    this.isRunning = true;
-    if (this.runAction) {
-      this.mixer.stopAllAction();
-      this.runAction.reset();
-      this.runAction.play();
+  onKeyPressed(direction) {
+    console.log(`${direction} key pressed handler called`);
+    if (direction === 'up') {
+      this.isRunning = true;
+      if (this.mixer && this.character.animations[4]) {
+        this.mixer.stopAllAction();
+        this.runAction = this.mixer.clipAction(this.character.animations[4]);
+        this.runAction.play();
+      }
+    } else if (direction === 'left') {
+      this.moveLeftDirection = true;
+      this.moveRightDirection = false;
+    } else if (direction === 'right') {
+      this.moveLeftDirection = false;
+      this.moveRightDirection = true;
     }
-  }
-
-  onLeftKeyPressed() {
-    this.moveLeftDirection = true;
-    this.moveRightDirection = false;
-  }
-
-  onRightKeyPressed() {
-    this.moveLeftDirection = false;
-    this.moveRightDirection = true;
   }
 
   moveForward() {
@@ -99,52 +98,34 @@ class Character {
   }
 
   moveLeft() {
-    if (this.element.position.x > -3) {
-      this.element.position.x -= 1;
-    }
+    // if (this.element.position.x > -3) {
+    console.log('Move left called');
+    this.element.position.x -= 1;
+    // }
   }
 
   moveRight() {
-    if (this.element.position.x < 3) {
-      this.element.position.x += 1;
-    }
+    // if (this.element.position.x < 3) {
+    console.log('Move right called');
+    this.element.position.x += 1;
+    // }
   }
 
-  onUnpause() {}
-
-  onPause() {}
-
   handleKeyDown(e) {
-    if (!this.gameOver) {
-      const key = e.keyCode;
-      if (this.keysAllowed[key] === false) return;
+    const key = e.keyCode;
+    if (!this.gameOver && this.keysAllowed[key] !== false) {
       this.keysAllowed[key] = false;
-      if (this.paused && !this.collisionsDetected() && key > 18) {
-        this.paused = false;
-        this.character.onUnpause();
-        document.getElementById('variable-content').style.visibility = 'hidden';
-        document.getElementById('controls').style.display = 'none';
-      } else {
-        if (key === 80) {
-          this.paused = true;
-          this.onPause();
-          document.getElementById('variable-content').style.visibility =
-            'visible';
-          document.getElementById('variable-content').innerHTML =
-            'Game is paused. Press any key to resume.';
-        }
-        if (key === 38 && !this.paused) {
-          this.onUpKeyPressed();
+      if (!this.paused) {
+        if (key === 38) {
+          this.onKeyPressed('up');
           console.log('Up key pressed');
-        }
-        if (key === 37 && !this.paused) {
-          this.moveLeftDirection = true;
-          this.moveRightDirection = false;
+        } else if (key === 37) {
+          this.onKeyPressed('left');
+          console.log('Position X after move left: ', this.element.position.x);
           console.log('Left key pressed');
-        }
-        if (key === 39 && !this.paused) {
-          this.moveLeftDirection = false;
-          this.moveRightDirection = true;
+        } else if (key === 39) {
+          this.onKeyPressed('right');
+          console.log('Position X after move right: ', this.element.position.x);
           console.log('Right key pressed');
         }
       }
@@ -153,14 +134,14 @@ class Character {
 
   handleKeyUp(e) {
     const key = e.keyCode;
-    if (key === 37 && !this.paused) {
+    if (key === 37) {
+      // если отпущена клавиша влево
       this.moveLeftDirection = false;
-      this.moveRightDirection = false;
       console.log('Left key released');
     }
-    if (key === 39 && !this.paused) {
+    if (key === 39) {
+      // если отпущена клавиша вправо
       this.moveRightDirection = false;
-      this.moveLeftDirection = false;
       console.log('Right key released');
     }
     this.keysAllowed[key] = true;
@@ -359,8 +340,14 @@ class World {
   }
 
   initEventListeners() {
-    document.addEventListener('keydown', this.character.handleKeyDown);
-    document.addEventListener('keyup', this.character.handleKeyUp);
+    document.addEventListener(
+      'keydown',
+      this.character.handleKeyDown.bind(this.character)
+    );
+    document.addEventListener(
+      'keyup',
+      this.character.handleKeyUp.bind(this.character)
+    );
     window.addEventListener('focus', this.handleFocus);
   }
 
