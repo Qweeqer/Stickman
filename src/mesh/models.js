@@ -22,7 +22,7 @@ export function loadModels(scene) {
       console.log('gltf.stickman', gltf);
       stickman = gltf.scene;
       mixer = new THREE.AnimationMixer(stickman);
-      runAction = mixer.clipAction(gltf.animations[0]);
+      runAction = mixer.clipAction(gltf.animations[4]);
       runAction.play();
       // stickman.position.set(0, 0, 0);
       stickman.rotation.y = Math.PI; // Поворот модели на 180 градусов вокруг оси Y
